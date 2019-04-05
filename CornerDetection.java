@@ -1,8 +1,7 @@
 // assignment 5 - 3301
 // Names (student no): Nicholas Delaney (201141140), Adrian Johnson, Bailey White
-// issues: corner response getting all negative #'s - I think it has to do with normalizing the A matrix
-// I believe the derivative of gaussian, thresholding and non-max supression are working
-
+// issues: I believe the corner response has an issue with scaling
+//         however the derivatives, thresholding, non-max suppression and display corner functions are working.
 package assign5_3301;
 
 import java.awt.*;
@@ -146,7 +145,7 @@ public class CornerDetection extends Frame implements ActionListener {
                 sumY += (dogKernelY[i + w][j + w] > 0) ? dogKernelY[i + w][j + w] : 0;
             }
         }
-        
+
         // normalize derivative of gaussian kernels
         for (int i = -w; i <= w; i++) {
             for (int j = -w; j <= w; j++) {
@@ -157,7 +156,7 @@ public class CornerDetection extends Frame implements ActionListener {
         float maxIy = 0;
         float maxIx = 0;
         float maxIxIy = 0;
-        
+
         // apply derivative of gaussian filter 
         // also get max values for A matrix for normalizing later
         for (int q = 0; q < height; q++) {
@@ -179,8 +178,10 @@ public class CornerDetection extends Frame implements ActionListener {
 
             }
         }
-        
+
         // normalize A matrix values
+        // possible issue: unnormalized values are actually passed through
+        //                 target image is all black otherwise.
         for (int q = 0; q < height; q++) {
             for (int p = 0; p < width; p++) {
                 sumX = 0;
@@ -193,8 +194,8 @@ public class CornerDetection extends Frame implements ActionListener {
                         sumX += lumi * dogKernelX[u + w][v + w];
                         sumY += lumi * dogKernelX[u + w][v + w];
                     }
-                }              
-                target.image.setRGB(p, q, (int) ((sumX * sumX) * 255 / maxIx) << 16 | (int) ((sumY * sumY) * 255 / maxIy) << 8 | (int) ((sumX * sumY) * 255 / maxIxIy));
+                }
+                target.image.setRGB(p, q, (int) (sumX * sumX) << 16 | (int) (sumY * sumY) << 8 | (int) (sumX * sumY));
 
             }
         }
@@ -215,7 +216,6 @@ public class CornerDetection extends Frame implements ActionListener {
         for (int q = 0; q < height; q++) {
             for (int p = 0; p < width; p++) {
                 Color clr = new Color(target.image.getRGB(p, q));
-                // reverse normalization
                 a[0][0] = clr.getRed();
                 a[0][1] = clr.getBlue();
                 a[1][0] = clr.getBlue();
@@ -226,14 +226,8 @@ public class CornerDetection extends Frame implements ActionListener {
                 if (r > max) {
                     max = r;
                 }
-                else if (r < min) {
-                    min = r;
-                }
             }
         }
-        System.out.println(max);
-        System.out.println(min);
-     
         // normalize 
         for (int q = 0; q < height; q++) {
             for (int p = 0; p < width; p++) {
@@ -264,9 +258,6 @@ public class CornerDetection extends Frame implements ActionListener {
             for (int p = 0; p < width; p++) {
                 Color clr = new Color(target.image.getRGB(p, q));
                 r = clr.getRed();
-                if (r > 0) {
-                    System.out.println(r);
-                }
                 if (r > max) {
                     max = r;
                 }
@@ -284,7 +275,7 @@ public class CornerDetection extends Frame implements ActionListener {
         }
         target.repaint();
     }
-    
+
     // iterate through image with 3x3 window 
     // turn max pixel white and the rest black
     public void nonMaxSuppression() {
@@ -315,26 +306,26 @@ public class CornerDetection extends Frame implements ActionListener {
         }
         target.repaint();
     }
-    
+
+    // draws a circle of radius around white pixels
     public void displayCorners() {
         int x, y;
         int radius = 10;
-            for (int k = 0; k < height; k++) {
-                for (int h = 0; h < width; h++) {
-                    Color clr = new Color(target.image.getRGB(h, k));
-                    
-                    if (clr.getRed() == 255) {
-                        for (int i = 0; i < 360; i++) {
-                            x = (int) (h + radius * Math.cos(i));
-                            y = (int) (k + radius * Math.sin(i));
-                            if (x > 0 && x < width && y > 0 && y < height) {
-                                source.image.setRGB(x, y, new Color(255, 0, 0).getRGB());
-                            }
+        for (int k = 0; k < height; k++) {
+            for (int h = 0; h < width; h++) {
+                Color clr = new Color(target.image.getRGB(h, k));
+                if (clr.getRed() == 255) {
+                    for (int i = 0; i < 360; i++) {
+                        x = (int) (h + radius * Math.cos(i));
+                        y = (int) (k + radius * Math.sin(i));
+                        if (x > 0 && x < width && y > 0 && y < height) {
+                            source.image.setRGB(x, y, new Color(255, 0, 0).getRGB());
                         }
                     }
                 }
             }
-            source.repaint();
+        }
+        source.repaint();
     }
 
     public static void main(String[] args) {
